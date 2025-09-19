@@ -1,0 +1,88 @@
+for each process/os there is a process control block(PCB) which has file descriptor tBle, which internally keeps trck of the resources used by process
+file decripters hold pointers to resources: files, teminal I/o,pipes - com channel, sockets- comm channel b/w machines.
+
+stdin(0), stdout(1), stderr(2) - inside filde desctrpor ble 
+
+system calls with fd:
+fd = create("foo.txt", 0644) - creates a file with permission.
+fd table gets an entry which points to foo.txt.
+write() - fd will be the handle to that resource.
+read(): To read data from the resource.
+write(): To write data to the resource.
+close(): To close the resource and release the file descriptor.
+lseek(): To change the file offset.
+
+00:00:00
+in this video I will discuss the notion of file descriptors in in the UNIX world and in general the operating system world so a file descriptor is simply an index into the file descriptor table so what does that mean so for each process in in our operating system per process we said that there is going to be [Music] process control block the PCB and one of the things inside the PC we remember the PCB keeps track of the the context of the process so one of the fields within this is a structure called an array
+
+
+00:01:05
+called the file descriptor table so this array internally keeps track of all the resources that the process owns and can operate on and the resources being the resources that it can the file descriptor table can hold holds pointers to resources now I'm using the word resources very loosely because what happens in the UNIX world is we create an abstraction all resources whether they be files terminal terminal input/output pipes as we will see which are just communication channels sockets we will see our communication channels
+
+
+00:02:02
+between machines and and there's a few others like this any device devices all these if a process opens them or uses them they will have an entry here so every process when it first starts is is given access to three resources three resources are its standard in its standard out and its standard error which means that there are resources within the operating system and in it rather than here now there's resources within the operating system that are the i/o the input the output and standard error for this
+
+
+00:02:55
+process for example if I were if I were working in a terminal in an extern next terminal then if I were be if I if I have a shell in this terminal the the i/o for this is the input is the STD in the output is STD out and and the STD error is in this case it will be the same thing as a terminal now if there is a different process if they're worse I open two terminals let's say terminal 1 and terminal 2 which are two different processes now then this terminal will have its own standard in and standard
+
+
+00:03:38
+out because it's a different terminal from that so in some sense these are virtual devices now if I were to create a file so if I were to do something like file descriptor equals open I should I'll use a create and step open for now if I were to use create and I want to create a file called foo dot txt let's say and I'm gonna give it some permissions I'm gonna give those you figure out what these mean later on let's say so we're giving some permissions it's a how we want this file
+
+
+00:04:20
+to be accessible who can access it and who can write to it who can read from who can execute it so for now I created this file so if I were to do that and then my file descriptor table is gonna get a third entry the third entry my my third entry here is now going to point to an internal resource that is called the file it's called a file structure that the system creates for this and somewhere in here there will be a pointer saying that this guy points to something on my disk which holds the
+
+
+00:05:03
+information about food text but from here onwards when I want to read right to this let's say I want to write to this function this this file I would use this resource as my handle this index as my handle I would say something like FD and I want to read let's say print the string hi and it's two bytes I would say something like that so this becomes my handle to that resource for the rest of my program let's take an example to see what else I can do here so here's an example I'm going to print a bunch of
+
+
+00:05:44
+different devices resources that I have so let's blow this guy up a little bit so I'm printing the file descriptor table from within the process I'm using a little trick to do that so what you see here is I it's going to show a file scripted process file descriptor table a descriptor pointer and description the first thing I'm doing is printing the index this is this will be 0 for us because that's the zero right there and this is actually the point remember the file descriptor table we looked at so
+
+
+00:06:21
+they're saying here is the index 0 1 2 and so on and because we don't want to have to remember that the operating system gives us hash define for the 0 which is status G in so we don't have to memorize it that's STD out and the score file number STD errors file number but what you will find inside here is the STD in STD in is also given to you by the operating system and it's the pointer that's sitting there because there are function there are functions that you are called
+
+
+00:06:58
+some require a file descriptor some require a file pointer so this is a file point this is the this is a file pointer and this is the file descriptor so I'm printing these three entries it says once the terminals input device terminals output device and other is a terminals error device now I'm creating two files one is I'm creating a file which is open if it doesn't exist we'll create it if it already exists then it'll then it will just open it so I have an open I'm reading one file for
+
+
+00:07:36
+input one file for output and I'm gonna print their ID so IFB is just a file descriptor now so this will be a 3 because that's the next one I created and what you will find here is the address 0 X in this case it says it's a 0 X 1 1 F 4 4 2 0 which is basically a pointer to a file structure within which there is again indication as to where it is on my on my hard drive so there's a there's in dot text right there that it points to similarly I am printing what the structure for what what is pointing
+
+
+00:08:21
+to 2 4 4 and now I'm creating a pipe will look more we'll see more about the pie but a pipe is a file descriptor table also so the pipe is a simple structure that has two ends one is the right hand other is a read and this happens to be in this example this happens to be the pipe FD of 1 and pipe FD of 0 is the read and that's just the convention usually makes 0 to be the read I want to be the right so I created a pipe here and now I'm gonna print their values so I'm using this I'm printing
+
+
+00:09:02
+out what that is so that happens to be for right now at this table this happens to be a value of 4 if you see this index this is 0-1 this happens to be 4 and this happens to be 5 so 4 would have the pointer to the read end of it and this would have the pointer to the right hand I'm also using a little trick to get the pointer so that I can print it and I'm using this function called FB open an FD open function takes a file descriptor and returns are filed point returns a file pointer that is the contents of
+
+
+00:09:47
+that
+
+
+
+
+Summary
+The video provides an in-depth explanation of file descriptors in UNIX and general operating systems. A file descriptor is essentially an index into a process-specific file descriptor table, which is an array maintained inside the process control block (PCB). This table keeps track of all resources that a process owns and can operate on, including files, terminals, pipes, sockets, and devices, through pointers to corresponding internal resource structures. When a process starts, it is automatically assigned three standard file descriptors: standard input (STDIN), standard output (STDOUT), and standard error (STDERR), which correspond to its initial input/output streams, typically connected to a terminal.
+
+The video illustrates how file descriptors work by walking through examples such as opening or creating files and assigning file descriptors to them. When a file is opened or created (e.g., “foo.txt”), the operating system creates a file structure representing this file, and the file descriptor table receives an entry pointing to this structure. The file descriptor then acts as a handle the program uses to read from or write to the file. The video also touches upon permissions for files, indicating the control over who can read, write, or execute them, though these are not delved into deeply.
+
+Additionally, the video demonstrates printing the file descriptor table contents for a process, showing the indices (0, 1, 2, etc.), their corresponding resources, and the pointers to the internal data structures. The standard descriptors have predefined indices and symbolic constants (such as STDIN_FILENO) to avoid memorization. The video explains that file descriptors are integral to various operations and system calls that interact with files or communication channels.
+
+Furthermore, the video covers the concept of pipes, which are another type of resource managed through the file descriptor table. A pipe comprises two ends: a read end and a write end, conventionally assigned file descriptors 0 and 1 in the pipe’s context. The video shows how pipes are created and represented within the file descriptor table, highlighting the pointers to their internal structures. The discussion includes a brief mention of functions like fdopen() which convert file descriptors to file pointers, allowing the use of standard I/O operations on them.
+
+Overall, the video offers a practical and conceptual overview of how UNIX-like systems manage file descriptors as abstract handles to a wide variety of resources, enabling processes to efficiently perform I/O operations.
+
+Highlights
+📂 File descriptors are indexes into a per-process file descriptor table stored in the process control block (PCB).
+🖥️ Upon process creation, three standard file descriptors (STDIN, STDOUT, STDERR) are assigned for input/output/error streams.
+
+

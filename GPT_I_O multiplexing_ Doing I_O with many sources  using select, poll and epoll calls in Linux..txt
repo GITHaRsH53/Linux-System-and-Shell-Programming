@@ -1,0 +1,132 @@
+
+00:00:01
+hello and welcome to this video i am karnes chori and today we look at io multiplexing using the select and poll system calls and also using the epoll api in linux the question is what is i o multiplexing and why do we need it i o multiplexing is io with many sources it is a problem of magnitude we are talking in context of network application that is server and clients and it is a server that has to communicate with many clients a client does not have a problem because it has to talk with just
+
+
+00:00:38
+one server so as the scale of operations goes up the number of clients that a server has to communicate with also increases so this essentially is a problem of io multiplexing the problem of server being able to communicate with many clients if we look a little deep into the communication problem we find that talking is easy it is listening that is difficult when i say talking i mean the right operation it is relatively easy to write to a socket you have the data jamaica write or send call and the work is done read from a socket
+
+
+00:01:14
+is difficult because a read or receive call blocks and completes only when data is available so if you do receive from a socket you just block till data becomes available and the data will come after an hour a day or a week what happens to other sockets since we are blocked waiting for data on one socket we can't do a read on other sockets obviously this is not workable there are two solutions do a non-blocking receive on a socket you wait for data till timeout say 10 millisecond and then go to the
+
+
+00:01:51
+next socket but if there was no data you end up wasting time so we go to the second solution second solution is have one thread per client this is good but it does not scale after a certain number of clients the performance of the server will degrade so we need something better still and we have io monitoring calls select poll and the epoll api to these calls you can pass a set of file descriptors the call returns when some of the file descriptors for sockets are ready for io so for a read or receive
+
+
+00:02:28
+you pass a set of file descriptors and when there is data the call returns you take the indicated file descriptors that are ready for io and do the read or receive call so with this there is no need to block for an individual socket you block on all sockets together and with the call returns some of the sockets are ready for io now we look at the select system call select operates on a set of file descriptors it takes in three sets of file descriptors as arguments the three sets are read fds a set of
+
+
+00:03:01
+file descriptors we want to be monitored for read operation and write of these the set we want to be monitored for write operation and accept fts the set we want to monitor for io exceptions any of the pointers to the sets can be null and that set is ignored there are macros to generate the file descriptor set fdclr clears fd from the set fd is set tells whether fd is part of the set or not ftset sets the ft in the file descriptor set and fd0 initializes the file descriptor set the first parameter nfds is the largest
+
+
+00:03:38
+fd in the sets plus 1. the last parameter timeout is in seconds and micro seconds select returns when one or more of file descriptors is ready for io or the timeout has occurred now we have example server and client our server is a flight time server it keeps track of arrival and departure times of flights at an airport we'll use the same example for select poll and equal api there are clients that feed and query the flight times the server starts and sets up a socket for listening for connections
+
+
+00:04:15
+and this is the loop before the start of loop there is only one socket the listener we create an empty set of sockets fds and we add listener to it we assign the file descriptor set fds to the set read fds and make the select call with read fds we are only interested in read fds the other two pointers write fds and accept fds are null our timeout is infinite the last pointer is also null ftmax is the highest file descriptor number so the first parameter is fdmx plus 1. when the select call returns
+
+
+00:04:52
+some of the sockets in read fd set are ready for input operation the next step is to find out which file descriptors are ready for reading for this we need to look at readaptis file descriptor set we scan read of this file descriptor set for file descriptors 0 to fdmax we need to scan the file disk to set one by one sequentially starting with file descriptor 0 and go on till fdmax if the file descriptor is listener it means it is a request for new connection the connection request is accepted and the new file descriptor is added to
+
+
+00:05:28
+fds the set of all file descriptors if the file descriptor is not listener it means data is available for an existing connection and we go ahead and receive the data using the ra cv call if the number of bytes received in the recv call is 0 it means that the relevant client is closing the connection we close the file descriptor and remove it from fds the set of all file descriptors if the number of bytes is greater than 0 we process the received message and service the client and this is done for
+
+
+00:06:02
+all the ready file descriptors received in the read fds set to summarize with select the server is able to communicate with clients on multiple sockets however the file descriptor set is not a very efficient data structure suppose there are only two file descriptors in a set returned by the select call and these are file descriptor numbers 5 and 223 the server program starts by checking the file descriptor set for descriptor 0 then 1 2 etc and then finds the file descriptor 5. next it goes in checking for file
+
+
+00:06:38
+descriptor 6 7 8 etc and after some time it finds the file descriptor 223 so it is not very efficient or intuitive also select modifies the file descriptor sets so in the next iteration the program has to re-initialize the file descriptor sets before making the select call we will move on to next i monitoring call poll and we'll see that poll does not suffer from these type of problems to a large extent the poll call monitors file descriptors for events the first parameter fds is an array of structures
+
+
+00:07:17
+structural ft this structure contains fd the file descriptor of interest and there are two short integers which are bitmask and represent events the first short integer events is for requested events the process wants to know if any of these events occur for the given file descriptor the next short integer is r events these are the events that actually happened on the file descriptor ft and are returned in this bit mask the important events are pollen which indicates input operations are possible on this
+
+
+00:07:51
+ft pull out which means output operations on the file descriptor are possible then there is the event poll pri which indicates exception conditions of the file descriptor and another event is pole rd hub which means hang up in stream socket as the peer closed connection the gnu source feature test macro must be defined for using the poll rd hub event then there are error events if any of these happen they are returned the r events bit mask it does not matter whether they are initially passed the events bitmask
+
+
+00:08:26
+or not these events are poll err for error conditions on the file descriptor poll hub for hangup and poll and well for invalid requests as the file descriptor was not open in the first place the second parameter nfd specifies the number of elements in the array fds the first parameter the last parameter timeout is in milliseconds paul returns when one or more file descriptors have events or timeout has occurred or a signal has interrupted poll as an example of poll let us modify the server program
+
+
+00:09:03
+we presented earlier under select we will replace the select call with poll and see how it works and here is the server program with poll we come to the relevant part of the program related to monitoring of socket file descriptors and the rest of the program is the same as before initially nfd is zero we define a pointer to struct pole fds for the array and max fds num fts are all zeros next we allocate space for five struct pole fds we do not know beforehand how many clients we will have so we start with five clients and we can
+
+
+00:09:40
+make this space bigger if more clients come next the zeroth element of array of struct poll fds is for listener we are interested in the polling event and none of this becomes one we come to the loop we assign num fds to nfds and we make poll call and after some time poll returns we examine all the elements of poll lefties array here in the for loop fd is just a controlling variable for the for loop it is not a file descriptor the file descriptor is a part of a structure struct pole fd and we can access it via
+
+
+00:10:16
+the pointer pole fds ft dereference operator ft in the loop we examine all the elements of the array of struct pole fd if file descriptor is listener then it is request for a new connection the request is accepted which gives us a new socket for communication with the client for this new socket a struct poleft is added to the array for monitoring by poll if socket is not listener it is an existing connection and we go ahead and receive data with the recv call if number of bytes received is zero the
+
+
+00:10:50
+client has closed the connection and we do likewise we cannot really delete the structure for this file descriptor so we make it negative so that it is ignored by poll in the next iteration onwards if number of bytes received is greater than 0 it is a message from a client we process the message and do the needful so this is the server with poll poll versus select select user sets of file descriptors which are inefficient and difficult to use the problem with the file descriptor set is that one has to process it for all
+
+
+00:11:26
+file descriptors zero to fdmax sequentially one by one so if you've got two file descriptors say 5 and 223 ready for io you need to process the file descriptor set with file descriptor 0 01.4567 dot dot 222 223 224 dot dot fd max this is tedious and inefficient in the case of poll we have an array of struct pole ft and we know the number of elements in the array so we can simply process the array to know which file descriptors are ready for io also in select one passes file descriptors of interest
+
+
+00:12:10
+in file descriptor sets and select overwrites the file descriptor sets to indicate which file descriptors are ready for io so one has to initialize the file descriptor sets in each iteration before calling select poll has two distinct fields events and are events for requested and returned events respectively it does not modify the requested events field so it is not necessary to re-initialize it every time before making the poll call we can definitely say that poll call is better than the select
+
+
+00:12:46
+call now we come to the e-poll api for monitoring multiple file descriptors epoll is specific to linux there are three basic calls epo create e-port ctl and e-poll weight impulse create creates an e-poll instance the parameter size is obsolete but must be greater than zero epoll create one is a newer call and it also creates a new epoll instance both people create and apple create one return the file descriptor for the newly created instance of epoll the parameter flex can be 0 or e clo exec in which case close on exit flag is set
+
+
+00:13:32
+on the new file descriptor once you have created an epoll instance you can add modify or delete file descriptors to or from it and you can specify the events that you wish to monitor for the file descriptors you can do these control operations with the epoll ctl call the first parameter epfd is the file descriptor of the epoll instance the third parameter fd is the file descriptor for which you wish to do the control operation the second parameter op specifies the control operation to be done it can
+
+
+00:14:06
+be impulse ctl add which means fd is to be added to the set of file descriptors monitored by the epoll instance epft the events to be monitored are given in the location pointed by the last parameter event op can be equal ctl mod which means the events being monitored for the file descriptor ft are to be changed to those pointed by the last parameter event and finally op can be eposctl dell which means that the file descriptor fd is to be deleted from the set of file descriptors associated with the epoll instance epft
+
+
+00:14:44
+in this case the fourth parameter events is ignored the fourth parameter a pointer to struck equal event specifies the events to be monitored for the file descriptor fd event contains an unsigned 32-bit integer events which is a bit mask made by orig zero or more events the possible events are e-pull-in file descriptor is available for read e-pullout file descriptor is available for write e-pol rd hub stream socket pairs close connection e-pull pri exception condition on file descriptor people err error condition on file
+
+
+00:15:25
+descriptor epoll hub hang upon file descriptor epoll et set as triggered behavior for file descriptor the default behavior is level triggered which is intuitive however there are certain use cases where edge triggered is useful e pull one shot set one shot behavior for file descriptor file descriptor is disabled after one event epoll wake up ensure that system does not enter suspend or hibernate when this event is pending or is being processed epoll exclusive sets up exclusive mode of wake up for april file descriptor to which
+
+
+00:16:02
+this file descriptor is being attached useful for avoiding thundering hurt problem in certain scenarios equal weight waits and returns when at least one event has occurred on the epoll instance identified by file descriptor epoll ft or the timeout has occurred the timeout is in milliseconds a maximum max events are returned max events must be greater than zero and array of max event struct e-poll event must be provided as the second parameter e-pol p-weight is just like equal weight except that it is a fifth
+
+
+00:16:38
+parameter a signal mask this signal mask has made the signal mask of the thread at the beginning of the e-pull width call before repel weight returns the original mask is restored so april weight makes it possible to change the signal action for some signals for the duration of the equal weight call and now we have an example program using the e-pull api for monitoring sockets this is the modified flight time server using the epoll api instead of poll everything except socket monitoring is the same as before the server starts
+
+
+00:17:13
+and sets up our listener socket and then using epo create one it creates an epoll instance and it adds up the listener socket to the epoll instance the loop starts the server does evil wait our timeout is infinite so minus 1 is passed as the timeout when the weight is over epoll weight returns number of file descriptors in nfds and the events in the array ep event so we go through the ep event array if the socket is a listener it is a request for new connection the request is accepted and the new
+
+
+00:17:47
+socket is added to the set of file descriptors monitored by the epoll instance eft if the socket is not listener then it is communication from an existing client we go ahead and receive the message using the recv call if the number of bytes received is zero the client has closed the connection we delete the socket fd from the set monitored by the epoll instance and close the socket file descriptor and if number of bytes received is more than zero we process the message from the client and do the needful epoll versus polls
+
+
+00:18:21
+select how does epool compare with the poll and select system calls in case of select and also poll all the data like the file descriptors and events goes to the kernel with the system call and also a lot of data comes back to the process from the kernel so there is a lot of data flow between the user space and the kernel and vice versa in case of select it is difficult to process the file descriptor sets because no matter how many file descriptors are there one has to check for each file descriptor 0 to fdmax
+
+
+00:18:54
+select is also complicated because it overwrites the file descriptor sets so one has to re-initialize them for the next iteration e-poll is different because it creates a data structure an e-poll instance in the kernel you can always add delete or modify the file descriptors attached to the epoll instance e perweight the call mate for each iteration gives the array of structures with the array size each element of the array is a structure containing the file descriptor and the events that happened on that file descriptor so
+
+
+00:19:27
+data flow between the process and kernel is much less for each iteration also equal weight gives data in a format that can be easily processed by the server program so equal api is much better and faster than poll and select calls and we come to the end of this video you can find all this information at https colon double slash tinyurl.com iomux1 thanks very much for watching take care and stay safe
+

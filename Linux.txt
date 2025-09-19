@@ -1,0 +1,19 @@
+Problem: save the output of ls -l into a file named directory_listing.txt
+Problem: Append the current date to log.txt wihtout deleteing the old content
+
+Week - 2:
+Make a thread program then kill thread program using SIGINT.
+
+Week - 3:
+Signal handler for SIGINT, SIGTERM
+
+KILL - terminiate, then these handler function execute.
+
+Register signal handler in main function.   
+
+
+Sigsuspand - midterm syllabus
+
+
+Week - 4
+order of web sockets
